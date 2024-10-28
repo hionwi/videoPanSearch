@@ -42,7 +42,7 @@ def main(page: ft.Page):
     ba = TextField(label="八进制", on_change=lambda e: convert_and_update(8, e))
     shi = TextField(label="十进制", on_change=lambda e: convert_and_update(10, e))
     shi_liu = TextField(label="十六进制", on_change=lambda e: convert_and_update(16, e))
-    wx = ft.Text(value="0位", size=18)
+    wx = ft.Text(value="0位", size=16)
 
     def ge_random(e):
         snack_bar.content.value = "随机数过大或为空"
