@@ -1,9 +1,13 @@
+import asyncio
+import time
+
 import flet as ft
 
 from enc import generate_keys, sign, very
+from commons import process_bar, snack_bar
 
 
-def enc_page(page: ft.Page, snack_bar: ft.SnackBar):
+def enc_page(page: ft.Page):
     def gk(e):
         try:
             assert 0 < len(id_input.value)
@@ -19,7 +23,7 @@ def enc_page(page: ft.Page, snack_bar: ft.SnackBar):
             snack_bar.open = True
         page.update()
 
-    id_input = ft.TextField(label="输入ID", on_submit=gk)
+    id_input = ft.TextField(label="ID", on_submit=gk)
 
     id_yes_button = ft.ElevatedButton("生成密钥", on_click=gk, offset=ft.Offset(0.5, 0))
 
@@ -43,7 +47,7 @@ def enc_page(page: ft.Page, snack_bar: ft.SnackBar):
             snack_bar.open = True
         page.update()
 
-    sign_button = ft.ElevatedButton("签名", icon=ft.icons.EDIT,on_click=sign_message)
+    sign_button = ft.ElevatedButton("签名", icon=ft.icons.EDIT, on_click=sign_message)
 
     id_input_3 = ft.TextField(label="ID", )
     message_input_2 = ft.TextField(label="签名消息", )
@@ -66,7 +70,7 @@ def enc_page(page: ft.Page, snack_bar: ft.SnackBar):
         snack_bar.open = True
         page.update()
 
-    very_button = ft.ElevatedButton("验证",icon=ft.icons.VERIFIED, on_click=very_message)
+    very_button = ft.ElevatedButton("验证", icon=ft.icons.VERIFIED, on_click=very_message)
 
     def clean_data(e):
         id_input.value = ""
@@ -80,22 +84,27 @@ def enc_page(page: ft.Page, snack_bar: ft.SnackBar):
         sig_input.value = ""
         page.update()
 
+    col = ft.Column(
+        [
+            ft.Text("",height=0),
+            ft.Row([id_input, id_yes_button]),
+            ft.Divider(),
+            id_input_2, message_input, pk_input, sk_input, sign_button,
+            ft.Divider(),
+            id_input_3, message_input_2, pk_input_2, sig_input, very_button,
+            ft.ElevatedButton(icon=ft.icons.DELETE, text="清空数据", on_click=clean_data, color=ft.colors.RED),
+        ],
+        scroll=ft.ScrollMode.HIDDEN,
+    )
+
     return ft.Tab(
         tab_content=ft.Row([
             ft.Image(src="enc.png", width=25, height=25),
             ft.Text("加密与签名")
         ]),
         content=ft.Container(
-            ft.Column(
-                [
-                    ft.Row([id_input, id_yes_button]),
-                    ft.Divider(),
-                    id_input_2, message_input, pk_input, sk_input, sign_button,
-                    ft.Divider(),
-                    id_input_3, message_input_2, pk_input_2, sig_input, very_button,
-                    ft.ElevatedButton(icon=ft.icons.DELETE, text="清空数据", on_click=clean_data, color=ft.colors.RED),
-                ]
-            ),
-            padding=8
-        )
+            col,
+            padding=ft.Padding(8,0,8,8)
+        ),
+
     )

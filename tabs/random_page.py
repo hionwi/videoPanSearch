@@ -3,8 +3,10 @@ import random
 import flet as ft
 from flet_core import TextField
 
+from commons import snack_bar
 
-def random_tab(page: ft.Page, snack_bar: ft.SnackBar):
+
+def random_tab(page: ft.Page):
     def convert_and_update(base: int, e):
         snack_bar.content.value = "格式错误,请重新输入"
         if e.data != "":
@@ -59,25 +61,24 @@ def random_tab(page: ft.Page, snack_bar: ft.SnackBar):
         sj_text.value = ""
         page.update()
 
+    col = ft.Column(
+        [
+            er, ba, shi, shi_liu,
+            ft.Divider(),
+            ft.Row([sj_text, sj]),
+            ft.Divider(),
+            wx,
+            ft.ElevatedButton("清空数据", icon=ft.icons.DELETE, on_click=clear_data, color=ft.colors.RED)
+        ],
+    )
     t = ft.Tab(
         tab_content=ft.Row([
             ft.Image(src="shuffle.png", width=25, height=25),
             ft.Text("随机数生成与进制转换")
         ]),
         content=ft.Container(
-            content=ft.Column([
-                ft.Text("输入任意进制数进行转换"),
-                er, ba, shi, shi_liu,
-                ft.Divider(),
-                ft.Row([sj_text, sj]),
-                ft.Divider(),
-                wx,
-                ft.ElevatedButton("清空数据", icon=ft.icons.DELETE, on_click=clear_data, color=ft.colors.RED)
-
-            ]
-            ),
-            padding=8
-
+            content=col,
+            padding=8,
         )
     )
     return t

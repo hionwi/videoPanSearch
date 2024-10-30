@@ -1,6 +1,6 @@
 import ctypes
 
-my_lib = ctypes.CDLL('./libs/my_lib.dll')
+my_lib = ctypes.CDLL('./my_lib.dll')
 my_lib.genera_keys.argtypes = [
     ctypes.POINTER(ctypes.c_ubyte),
     ctypes.POINTER(ctypes.c_ubyte),
