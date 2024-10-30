@@ -86,7 +86,7 @@ def enc_page(page: ft.Page):
 
     col = ft.Column(
         [
-            ft.Text("",height=0),
+            ft.Text("",height=0), # 防止第一个元素被遮挡
             ft.Row([id_input, id_yes_button]),
             ft.Divider(),
             id_input_2, message_input, pk_input, sk_input, sign_button,
