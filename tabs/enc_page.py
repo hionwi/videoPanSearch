@@ -25,7 +25,7 @@ def enc_page(page: ft.Page):
 
     id_input = ft.TextField(label="ID", on_submit=gk)
 
-    id_yes_button = ft.ElevatedButton("生成密钥", on_click=gk, offset=ft.Offset(0.5, 0))
+    id_yes_button = ft.ElevatedButton("生成密钥", on_click=gk)
 
     id_input_2 = ft.TextField(label="ID", )
     message_input = ft.TextField(label="签名消息")
@@ -86,7 +86,7 @@ def enc_page(page: ft.Page):
 
     col = ft.Column(
         [
-            ft.Text("",height=0), # 防止第一个元素被遮挡
+            ft.Text("",height=0),
             ft.Row([id_input, id_yes_button]),
             ft.Divider(),
             id_input_2, message_input, pk_input, sk_input, sign_button,
@@ -104,7 +104,7 @@ def enc_page(page: ft.Page):
         ]),
         content=ft.Container(
             col,
-            padding=ft.Padding(8,0,8,8)
+            padding=8,
         ),
 
     )

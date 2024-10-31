@@ -63,6 +63,7 @@ def random_tab(page: ft.Page):
 
     col = ft.Column(
         [
+            ft.Text("", height=0),
             er, ba, shi, shi_liu,
             ft.Divider(),
             ft.Row([sj_text, sj]),

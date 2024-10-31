@@ -5,8 +5,6 @@ from tabs.enc_page import enc_page
 from tabs.random_page import random_tab
 
 
-
-
 def main(page: ft.Page):
     page.title = "进制转换器"
     page.overlay.append(process_bar)
@@ -22,15 +20,10 @@ def main(page: ft.Page):
             random_tab(page),
             enc_page(page),
         ],
+        expand=1
     )
 
-    t = ft.Stack(
-        [
-            tabs,
-        ],expand=1
-    )
-
-    page.add(t)
+    page.add(tabs)
 
 
 ft.app(main)
