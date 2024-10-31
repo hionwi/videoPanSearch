@@ -16,14 +16,14 @@ cola = ft.Column(
     [
         cards
     ],
-    expand=1,
+    expand=True,
     scroll=ft.ScrollMode.HIDDEN,
     alignment=ft.MainAxisAlignment.CENTER,
     horizontal_alignment=ft.CrossAxisAlignment.CENTER
 )
 
 tv_start = 0
-tv_count = 40
+tv_count = 20
 tv_des_dict = {}
 first_in = True
 
@@ -35,7 +35,11 @@ def next_show(e, page):
     net_show(e, page, True)
 
 
-more_button = ft.ElevatedButton("加载更多")
+more_button = ft.Row(
+    [
+        ft.ElevatedButton("加载更多", expand=True)
+    ], expand=True
+)
 
 
 class TvCard(ft.Card):
@@ -44,8 +48,7 @@ class TvCard(ft.Card):
         super().__init__()
         self.is_isolate = True
         self.page = page
-        self.loading_des = ft.ProgressRing(visible=False)
-        self.loading_img = ft.ProgressRing(visible=True)
+        self.loading_des = ft.ProgressRing(visible=True, width=70, height=70)
         self.id = tv_id
         self.tv_url = f"https://movie.douban.com/subject/{self.id}"
         self.api_url = f"https://api.douban.com/v2/movie/subject/{self.id}"
@@ -86,21 +89,30 @@ class TvCard(ft.Card):
         self.tv_summary = ft.Column(
             [
                 self.title,
-                self.tv_des
-            ],
+                self.tv_des,
+            ], expand=True,
             scroll=ft.ScrollMode.HIDDEN,
             alignment=ft.MainAxisAlignment.CENTER,
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             visible=False
         )
 
-        self.tv_img = ft.Container(ft.Image(fit=ft.ImageFit.FILL, visible=False), width=200, height=300)
+        self.tv_img = ft.Stack(
+            [
+                ft.Container(
+                    ft.Image(fit=ft.ImageFit.FILL, visible=False),
+                    width=200,
+                    height=300,
+                ),
+                self.loading_des
+            ],alignment=ft.alignment.center
+        )
 
         self.page.run_task(self.aio_get, self.cover_url)
         self.content = ft.Container(
             ft.Stack(
                 [
-                    self.tv_summary, self.loading_des,
+                    self.tv_summary,
                     ft.Row(
                         [
                             self.tv_img,
@@ -110,9 +122,6 @@ class TvCard(ft.Card):
                 ], expand=True
             ),
             on_click=lambda e: webbrowser.open(self.tv_url),
-            alignment=ft.alignment.top_left,
-            on_hover=self.on_hover
-
         )
         self.page.run_task(self.aio_post, self.api_url, self.api_key)
 
@@ -125,14 +134,14 @@ class TvCard(ft.Card):
     def show_details(self):
         self.tv_img.visible = False
         self.tv_title.visible = False
-        self.loading_des.visible = True
-        self.update()
+        self.tv_summary.visible = False
         if self.id in tv_des_dict:
             self.tv_des.value = "剧情简介：" + tv_des_dict[self.id]
         else:
             self.fetch_tv_details()
         self.tv_summary.visible = True
-        self.loading_des.visible = False
+        self.tv_img.visible = False
+        self.tv_title.visible = False
         self.content.padding = 12
         self.update()
 
@@ -162,25 +171,31 @@ class TvCard(ft.Card):
         async with aiohttp.ClientSession() as session:
             async with session.get(url) as response:
                 jsn = await response.content.read()
-                self.tv_img.content.src_base64 = base64.b64encode(jsn).decode()
-                self.tv_img.content.visible = True
+                self.tv_img.controls[0].content.src_base64 = base64.b64encode(jsn).decode()
+                self.tv_img.controls[0].content.visible = True
+                self.content.on_hover = self.on_hover
+                self.loading_des.visible = False
                 self.update()
 
 
 def net_show(e, page: ft.Page, more=False):
     global first_in
-    try:
-        if e.name == "change" and e.data != '2':
-            return
-    except:
-        pass
+    # try:
+    #     if e.name == "change" and e.data != '2':
+    #         return
+    # except:
+    #     pass
     if first_in or more:
         first_in = False
         process_bar.visible = True
         page.update()
 
+        cookies = {
+            "ck": "ryE4"
+        }
         p1.get(
-            f"https://m.douban.com/rexxar/api/v2/tv/recommend?refresh=0&start={tv_start}&count={tv_count}&selected_categories=%7B%22%E7%B1%BB%E5%9E%8B%22:%22%E5%8F%A4%E8%A3%85%22,%22%E5%BD%A2%E5%BC%8F%22:%22%E7%94%B5%E8%A7%86%E5%89%A7%22%7D&uncollect=false&tags=%E5%8F%A4%E8%A3%85&sort=R")
+            f"https://m.douban.com/rexxar/api/v2/tv/recommend?refresh=0&start={tv_start}&count={tv_count}&selected_categories=%7B%22%E7%B1%BB%E5%9E%8B%22:%22%E5%8F%A4%E8%A3%85%22,%22%E5%BD%A2%E5%BC%8F%22:%22%E7%94%B5%E8%A7%86%E5%89%A7%22%7D&uncollect=false&tags=%E5%8F%A4%E8%A3%85&sort=R&ck=ryE4",
+            cookies=cookies)
         items = p1.json['items']
         for item in items:
             cards.controls.append(
@@ -189,7 +204,7 @@ def net_show(e, page: ft.Page, more=False):
                        page))
             cards.update()
         cola.controls.append(more_button)
-        more_button.on_click = lambda e: next_show(e, page)
+        more_button.controls[0].on_click = lambda e: next_show(e, page)
         process_bar.visible = False
         page.update()
 
@@ -202,6 +217,7 @@ def net_page(page: ft.Page):
         content=ft.Container(
             cola,
             padding=8,
+            expand=True,
         ),
     )
     return t
