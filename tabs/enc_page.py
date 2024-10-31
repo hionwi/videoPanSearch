@@ -106,5 +106,4 @@ def enc_page(page: ft.Page):
             col,
             padding=8,
         ),
-
     )
