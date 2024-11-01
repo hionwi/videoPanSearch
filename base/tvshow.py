@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import webbrowser
 
 import aiohttp
 import flet as ft
@@ -13,18 +14,16 @@ class ShowCard(ft.Card):
     def did_mount(self):
         super().did_mount()
         self.page.run_task(self.get_img, self.cover_url)
-        self.page.run_task(self.get_summary, self.api_url, self.api_key)
+        self.page.run_task(self.get_summary, self.api_url, commons.api_key)
         self.get_tv()
 
-    def __init__(self, title, cover_url, tv_id, subtitle, base_api_url, api_key, tv_des_dict):
+    def __init__(self, title, cover_url, tv_id, subtitle, tv_des_dict):
         super().__init__()
         self.tv_url_dict = {}
         self.tv_des_dict = tv_des_dict
-        self.isolated = True
         self.loading_des = ft.ProgressRing(visible=True, width=70, height=70)
         self.id = tv_id
-        self.api_url = base_api_url + self.id
-        self.api_key = api_key
+        self.api_url = commons.base_api_url + self.id
         self.title = ft.Text(title, size=18)
         self.cover_url = cover_url
         self.subtitle = ft.Column(
@@ -87,6 +86,9 @@ class ShowCard(ft.Card):
                             self.tv_img,
                             self.tv_title
                         ], expand=True
+                    ),
+                    ft.GestureDetector(
+                        on_secondary_tap=lambda e: webbrowser.open(commons.base_tv_url + self.id)
                     )
                 ], expand=True
             ),
@@ -150,7 +152,6 @@ class ShowCard(ft.Card):
             async with session.post(url, data=data) as response:
                 js = await response.json()
                 self.tv_url_dict[url] = js
-                print(js)
 
     def get_tv(self):
         getJuzi = "http://m.kkqws.com/v/api/getJuzi"
@@ -166,13 +167,9 @@ class ShowCard(ft.Card):
 
     def tv_url_show(self, e):
         urls = ft.Column()
-        print("tv_url_dict is " + str(self.tv_url_dict))
         for k, v in self.tv_url_dict.items():
-            print("k is " + k)
-            print("v is " + str(v))
             try:
                 for ita in v['list']:
-                    print("ita is " + str(ita))
                     if "夸克" in ita['question'] or "迅雷" in ita['question']:
                         continue
                     p_urls = extract_https_links(ita['answer'])
@@ -183,7 +180,6 @@ class ShowCard(ft.Card):
                             continue
                         if "?pwd=" not in url:
                             url += "?pwd=" + extract_code(ita['answer'])
-                        print("url is " + url)
                         urls.controls.append(
                             ft.Text(ita['question'], selectable=True)
                         )
@@ -212,17 +208,11 @@ class ShowCard(ft.Card):
 
 
 class ShowView(ft.Column):
-    def __init__(self, base_tv_url, base_api_url, api_key, tv_des_dict, format_url, search_url):
+    def __init__(self, tv_des_dict, format_url):
         super().__init__()
         self.format_url = format_url
-        self.search_bar = TvSearchBar(search_url)
-        self.base_tv_url = base_tv_url
-        self.base_api_url = base_api_url
-        self.api_key = api_key
         self.tv_des_dict = tv_des_dict
-        self.isolated = True
         self.cards = ft.GridView(runs_count=4, expand=True)
-        self.controls.append(self.search_bar)
         self.controls.append(self.cards)
         self.scroll = ft.ScrollMode.HIDDEN,
         self.alignment = ft.MainAxisAlignment.CENTER,
@@ -258,9 +248,7 @@ class ShowView(ft.Column):
                     item['pic']['normal'],
                     item['id'],
                     "".join(str(item['card_subtitle']).split("/")[4:]),
-                    self.base_api_url,
-                    self.api_key,
-                    self.tv_des_dict
+                    self.tv_des_dict,
                 )
             )
             self.cards.update()
@@ -270,43 +258,112 @@ class ShowView(ft.Column):
         self.page.update()
 
 
-class TvSearchBar(ft.SearchBar):
-    def __init__(self, base_search_url):
+class ShowStack(ft.Column):
+    def __init__(self, tv_des_dict, format_url):
         super().__init__()
-        self.base_search_url = base_search_url
-        self.bar_hint_text = "搜索电视剧..."
-        self.on_submit = self.submit
-
-    def did_mount(self):
-        super().did_mount()
-        for i in range(5):
-            self.controls.append(
-                ft.ListTile(
-                    title=ft.Text(""),
-                    leading=ft.Image(width=66, height=100,visible=False),
-                )
+        self.scroll = ft.ScrollMode.HIDDEN
+        self.alignment = ft.MainAxisAlignment.CENTER
+        self.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+        self.expand = True
+        self.format_url = format_url
+        self.tv_des_dict = tv_des_dict
+        self.search_result = TvSearchResult(tv_des_dict)
+        self.show_view = ShowView(tv_des_dict, format_url)
+        self.search_load = ft.ProgressRing(visible=False)
+        self.search_bar = TvSearchBar(tv_des_dict, self.search_result, self.show_view, self.search_load)
+        self.controls.append(ft.Row(
+            [
+                self.search_bar,
+                self.search_load
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+        ))
+        self.controls.append(
+            ft.Stack(
+                [
+                    self.show_view,
+                    self.search_result
+                ]
             )
+        )
 
-    def tap(self, e):
-        self.open_view()
+
+class TvSearchResult(ft.Column):
+    def __init__(self, tv_des_dict):
+        super().__init__()
+        self.tv_des_dict = tv_des_dict
+        self.cards = ft.GridView(runs_count=4, expand=True)
+        self.controls.append(self.cards)
+        self.scroll = ft.ScrollMode.HIDDEN,
+        self.alignment = ft.MainAxisAlignment.CENTER,
+        self.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+        self.expand = True
+        self.visible = False
+
+    def add_card(self, title, cover_url, tv_id, subtitle):
+        self.cards.controls.append(
+            ShowCard(
+                title,
+                cover_url,
+                tv_id,
+                subtitle,
+                self.tv_des_dict
+            )
+        )
+        self.cards.update()
+
+
+class TvSearchBar(ft.SearchBar):
+    def __init__(self, tv_des_dict, ls: TvSearchResult, show_view: ShowView, load: ft.ProgressRing):
+        super().__init__()
+        self.autofocus = True
+        self.load = load
+        self.show_view = show_view
+        self.tv_des_dict = tv_des_dict
+        self.result_show = ls
+        self.bar_hint_text = "搜索..."
+        self.on_submit = self.submit
+        self.on_change = self.change
+
+    def change(self, e):
+        if e.data == "":
+            self.result_show.visible = False
+            self.show_view.visible = True
+            self.page.update()
+
+    def build(self):
+        super().build()
+        self.page.on_keyboard_event = self.on_keyboard_event
+
+    def on_keyboard_event(self, e):
+        if e.key == "\\":
+            self.focus()
 
     def submit(self, e):
-        # self.page.run_task(self.search_tv, self.base_search_url.format(e.data), self.api_key)
-        pass
-        # self.update()
+        self.result_show.cards.clean()
+        self.page.run_task(self.search_tv, commons.search_api_url + e.data, commons.api_key)
 
-    def show_view(self, e):
-        print(e.data)
+    async def search_tv(self, url, data):
+        self.load.visible = True
+        self.page.update()
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, data=data) as response:
+                js = await response.json()
 
-        commons.p1.post(self.base_search_url + e.data, data=commons.api_key)
-        for (index, item) in enumerate(commons.p1.json['subjects']):
-            print(item['title'])
-            print(item)
-            self.controls[index].title.value = item['title']
-            commons.p2.get(item['images']['small'])
-            # print(commons.p2.response.content)
-            self.controls[index].leading.src_base64 = base64.b64encode(commons.p2.response.content).decode()
-            self.controls[index].leading.visible = True
-            if index == 4:
-                break
-        self.update()
+                items = js['subjects']
+                for item in items:
+                    subtitles = ""
+                    for cast in item['casts']:
+                        subtitles = subtitles + cast['name'] + " "
+
+                    self.result_show.add_card(
+                        item['title'],
+                        item['images']['small'],
+                        item['id'],
+                        subtitles
+                    )
+                self.load.visible = False
+                self.result_show.visible = True
+                self.show_view.visible = False
+                self.page.update()
