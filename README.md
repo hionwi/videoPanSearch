@@ -1,6 +1,6 @@
 # 视频网盘搜索 app
 
-安装环境（推荐使用 uv）
+安装环境（推荐使用 [uv](https://docs.astral.sh/uv/)）
 
 ```
 uv sync
